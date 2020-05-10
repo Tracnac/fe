@@ -10,6 +10,8 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <setjmp.h>
+
 
 #define FE_VERSION "1.0"
 
