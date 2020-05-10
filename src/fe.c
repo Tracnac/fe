@@ -22,6 +22,7 @@
 
 #include <string.h>
 #include "fe.h"
+#include "fe_math.h"
 
 #define unused(x)     ( (void) (x) )
 #define car(x)        ( (x)->car.o )
@@ -844,10 +845,6 @@ void fe_close(fe_Context *ctx) {
 }
 
 
-#ifdef FE_STANDALONE
-
-#include <setjmp.h>
-
 static jmp_buf toplevel;
 static char buf[64000];
 
@@ -863,6 +860,8 @@ int main(int argc, char **argv) {
   fe_Object *obj;
   FILE *volatile fp = stdin;
   fe_Context *ctx = fe_open(buf, sizeof(buf));
+
+  fe_set(ctx, fe_symbol(ctx, "pow"), fe_cfunc(ctx, f_pow));
 
   /* init input file */
   if (argc > 1) {
@@ -888,5 +887,3 @@ int main(int argc, char **argv) {
 
   return EXIT_SUCCESS;
 }
-
-#endif
