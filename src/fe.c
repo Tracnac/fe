@@ -873,6 +873,9 @@ int main(int argc, char **argv) {
     if (fp == stdin) { fe_writefp(ctx, obj, stdout); printf("\n"); }
   }
 
+  if(fp)
+    fclose(fp);
+
   return EXIT_SUCCESS;
 }
 
