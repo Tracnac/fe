@@ -1,17 +1,20 @@
+CC=gcc
 # CFLAGS:=-O3 -DFE_STANDALONE -Wall -Wextra -Wsign-conversion -pedantic -std=c99 -march=native
-CFLAGS:=-DFE_STANDALONE -Wall -Wextra -pedantic -std=c89 -march=native 
-APPNAME:=fe
+CFLAGS:=-DFE_STANDALONE -Wall -Wextra -pedantic -std=c89 -march=native
+LDFLAGS=-lm
+EXEC=fe
+OBJ = ./src/fe.c
+OBJ += ./src/fe_math.c
 
-ifeq ($(OS),Windows_NT)
-	APPNAME:=$(APPNAME).exe
-	CC:=gcc
-	RM:=del /Q
-endif
+all: $(EXEC)
 
-all: fe
+fe: $(OBJ)
+	$(CC) -o $@ $^ $(LDFLAGS)
 
-fe: src/fe.c 
-	$(CC) $(CFLAGS) -o $@ $<
+%.o: %.c
+	$(CC) -o $@ -c $< $(CFLAGS)
+
+.PHONY: clean
 
 clean:
-	$(RM) $(APPNAME)
+	rm -rf *.o $(EXEC)
