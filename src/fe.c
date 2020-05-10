@@ -43,13 +43,13 @@
 enum {
  P_LET, P_SET, P_IF, P_FN, P_MAC, P_WHILE, P_QUOTE, P_AND, P_OR, P_DO, P_CONS,
  P_CAR, P_CDR, P_SETCAR, P_SETCDR, P_LIST, P_NOT, P_IS, P_ATOM, P_PRINT, P_LT,
- P_LTE, P_ADD, P_SUB, P_MUL, P_DIV, P_MAX
+ P_LTE, P_GT, P_GTE, P_ADD, P_SUB, P_MUL, P_DIV, P_ADDADD, P_SUBSUB, P_MAX
 };
 
 static const char *primnames[] = {
   "let", "=", "if", "fn", "mac", "while", "quote", "and", "or", "do", "cons",
-  "car", "cdr", "setcar", "setcdr", "list", "not", "is", "atom", "print", "<",
-  "<=", "+", "-", "*", "/"
+  "car", "cdr", "setcar", "setcdr", "list", "!", "is", "atom", "print", "<",
+  "<=", ">", ">=" ,"+", "-", "*", "/", "++", "--"
 };
 
 static const char *typenames[] = {
@@ -605,6 +605,12 @@ static fe_Object* argstoenv(fe_Context *ctx, fe_Object *prm, fe_Object *arg, fe_
     res = fe_number(ctx, x);                      \
   }
 
+#define monoop(op) {                             \
+    fe_Number x = fe_tonumber(ctx, evalarg());    \
+      x op;                                       \
+    res = fe_number(ctx, x);                      \
+  }
+
 #define numcmpop(op) {                            \
     va = checktype(ctx, evalarg(), FE_TNUMBER);   \
     vb = checktype(ctx, evalarg(), FE_TNUMBER);   \
@@ -738,10 +744,14 @@ static fe_Object* eval(fe_Context *ctx, fe_Object *obj, fe_Object *env, fe_Objec
 
         case P_LT: numcmpop(<); break;
         case P_LTE: numcmpop(<=); break;
+        case P_GT: numcmpop(>); break;
+        case P_GTE: numcmpop(>=); break;
         case P_ADD: arithop(+); break;
         case P_SUB: arithop(-); break;
         case P_MUL: arithop(*); break;
         case P_DIV: arithop(/); break;
+        case P_ADDADD: monoop(++); break;
+        case P_SUBSUB: monoop(--); break;
       }
       break;
 
@@ -867,7 +877,7 @@ int main(int argc, char **argv) {
   /* re(p)l */
   for (;;) {
     fe_restoregc(ctx, gc);
-    if (fp == stdin) { printf("> "); }
+    if (fp == stdin) { printf("λ => "); }
     if (!(obj = fe_readfp(ctx, fp))) { break; }
     obj = fe_eval(ctx, obj);
     if (fp == stdin) { fe_writefp(ctx, obj, stdout); printf("\n"); }
