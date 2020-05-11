@@ -6,7 +6,7 @@
 ##### (let sym val)
 Creates a new binding of `sym` to the value `val` in the current environment.
 
-##### (= sym val)
+##### (set sym val)
 Sets the existing binding of `sym` to the value `val`; in lieu of an
 existing binding the global value is set.
 
@@ -15,11 +15,11 @@ If `cond` is true evaluates `then`, else evaluates `else` — `else` and `then`
 statements can be chained to replicate the functionality of else-if blocks.
 
 ```clojure
-> (= x 2)
+> (set x 2)
 nil
-> (if (is x 1) "one"
-      (is x 2) "two"
-      (is x 3) "three"
+> (if (== x 1) "one"
+      (== x 2) "two"
+      (== x 3) "three"
       "?")
 two
 ```
@@ -28,7 +28,7 @@ two
 Creates a new function.
 
 ```clojure
-> (= sqr (fn (n) (* n n)))
+> (set sqr (fn (n) (* n n)))
 nil
 > (sqr 4)
 16
@@ -37,9 +37,9 @@ nil
 ##### (mac params ...)
 Creates a new *macro*.
 ```clojure
-> (= incr (mac (x) (list '= x (list '+ x 1))))
+> (set incr (mac (x) (list 'set x (list '+ x 1))))
 nil
-> (= n 0)
+> (set n 0)
 nil
 > (incr n)
 nil
@@ -52,11 +52,11 @@ If `cond` evaluates to true evaluates the rest of its arguments and keeps
 repeating until `cond` evaluates to `nil`.
 
 ```clojure
-> (= i 0)
+> (set i 0)
 nil
 > (while (< i 3)
     (print i)
-    (= i (+ i 1)))
+    (set i (+ i 1))) ; or (set i (++ i))
 0
 1
 2
@@ -105,18 +105,6 @@ Returns all its arguments as a list.
 (1 2 3)
 ```
 
-##### (not val)
-Returns true if `val` is `nil`, else returns `nil`
-```clojure
-> (not 1)
-nil
-```
-
-##### (is a b)
-Returns true if the values `a` and `b` are equal in value. Numbers and strings
-are equal if equivalent, all other values are equal only if it is the same
-underlying object.
-
 ##### (atom x)
 Returns true if `x` is not a pair, otherwise `nil`.
 
@@ -124,11 +112,29 @@ Returns true if `x` is not a pair, otherwise `nil`.
 Prints all it's arguments to `stdout`, each separated by a space and followed by
 a new line.
 
+##### (! val)
+Returns true if `val` is `nil`, else returns `nil`
+```clojure
+> (! 1)
+nil
+```
+
+##### (== a b)
+Returns true if the values `a` and `b` are equal in value. Numbers and strings
+are equal if equivalent, all other values are equal only if it is the same
+underlying object.
+
 ##### (< a b)
 Returns true if the numerical value `a` is less than `b`.
 
 ##### (<= a b)
 Returns true if the numerical value `a` is less than or equal to `b`.
+
+##### (> a b)
+Returns true if the numerical value `a` is greater than `b`.
+
+##### (>= a b)
+Returns true if the numerical value `a` is greater than or equal to `b`.
 
 ##### (+ ...)
 Adds all its arguments together.
@@ -141,3 +147,9 @@ Multiplies all its arguments.
 
 ##### (/ ...)
 Divides all its arguments, left-to-right.
+
+##### (++ a)
+Add 1 to the numerical value `a`.
+
+##### (-- a)
+Subtract 1 to the numerical value `a`.
