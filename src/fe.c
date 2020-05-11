@@ -43,13 +43,13 @@
 
 enum {
  P_LET, P_SET, P_IF, P_FN, P_MAC, P_WHILE, P_QUOTE, P_AND, P_OR, P_DO, P_CONS,
- P_CAR, P_CDR, P_SETCAR, P_SETCDR, P_LIST, P_NOT, P_IS, P_ATOM, P_PRINT, P_LT,
+ P_CAR, P_CDR, P_SETCAR, P_SETCDR, P_LIST, P_NOT, P_EQUAL, P_ATOM, P_PRINT, P_LT,
  P_LTE, P_GT, P_GTE, P_ADD, P_SUB, P_MUL, P_DIV, P_ADDADD, P_SUBSUB, P_MAX
 };
 
 static const char *primnames[] = {
-  "let", "=", "if", "fn", "mac", "while", "quote", "and", "or", "do", "cons",
-  "car", "cdr", "setcar", "setcdr", "list", "!", "is", "atom", "print", "<",
+  "let", "set", "if", "fn", "mac", "while", "quote", "and", "or", "do", "cons",
+  "car", "cdr", "setcar", "setcdr", "list", "!", "==", "atom", "print", "<",
   "<=", ">", ">=" ,"+", "-", "*", "/", "++", "--"
 };
 
@@ -726,7 +726,7 @@ static fe_Object* eval(fe_Context *ctx, fe_Object *obj, fe_Object *env, fe_Objec
           res = fe_bool(ctx, isnil(evalarg()));
           break;
 
-        case P_IS:
+        case P_EQUAL:
           va = evalarg();
           res = fe_bool(ctx, equal(va, evalarg()));
           break;
@@ -861,6 +861,7 @@ int main(int argc, char **argv) {
   FILE *volatile fp = stdin;
   fe_Context *ctx = fe_open(buf, sizeof(buf));
 
+  
   fe_set(ctx, fe_symbol(ctx, "pow"), fe_cfunc(ctx, f_pow));
 
   /* init input file */
@@ -885,5 +886,6 @@ int main(int argc, char **argv) {
   if(fp)
     fclose(fp);
 
+  printf("\n");
   return EXIT_SUCCESS;
 }
