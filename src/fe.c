@@ -39,18 +39,20 @@
 #define STRBUFSIZE    ( (int) sizeof(fe_Object*) - 1 )
 #define GCMARKBIT     ( 0x2 )
 #define GCSTACKSIZE   ( 4096 )
+#define LIBCFUNCSMAX  ( 4096 )
 
+static int isInteractive = 0;
 
 enum {
  P_LET, P_SET, P_IF, P_FN, P_MAC, P_WHILE, P_QUOTE, P_AND, P_OR, P_DO, P_CONS,
  P_CAR, P_CDR, P_SETCAR, P_SETCDR, P_LIST, P_NOT, P_EQUAL, P_ATOM, P_PRINT, P_LT,
- P_LTE, P_GT, P_GTE, P_ADD, P_SUB, P_MUL, P_DIV, P_ADDADD, P_SUBSUB, P_MAX
+ P_LTE, P_GT, P_GTE, P_ADD, P_SUB, P_MUL, P_DIV, P_ADDADD, P_SUBSUB, P_IMPORT, P_MAX
 };
 
 static const char *primnames[] = {
   "let", "set", "if", "fn", "mac", "while", "quote", "and", "or", "do", "cons",
   "car", "cdr", "setcar", "setcdr", "list", "!", "==", "atom", "print", "<",
-  "<=", ">", ">=" ,"+", "-", "*", "/", "++", "--"
+  "<=", ">", ">=" ,"+", "-", "*", "/", "++", "--", "import"
 };
 
 static const char *typenames[] = {
@@ -608,7 +610,7 @@ static fe_Object* argstoenv(fe_Context *ctx, fe_Object *prm, fe_Object *arg, fe_
 
 #define monoop(op) {                             \
     fe_Number x = fe_tonumber(ctx, evalarg());    \
-      x op;                                       \
+    x op;                                       \
     res = fe_number(ctx, x);                      \
   }
 
@@ -743,6 +745,41 @@ static fe_Object* eval(fe_Context *ctx, fe_Object *obj, fe_Object *env, fe_Objec
           printf("\n");
           break;
 
+        case P_IMPORT:
+          va = checktype(ctx, evalarg(), FE_TSTRING);
+          /* DEBUG HARDCODED LIB */
+          void *handle = dlopen( "fe_math.so", RTLD_LAZY );
+          
+          /* TODO: Better error message... */
+          if( !handle ) {
+            if (isInteractive) {
+              printf("Import Error...");
+              break;
+            }
+            else {
+              fe_error(ctx, "Import Error...");
+            }
+          }
+
+          /* MODULE MUST HAVE A STRUCT _ENTRY (See fe_math.h) TO DEFINE FUNCTIONS */
+          void (*_entry)(_entrymodule *);
+          _entry = dlsym( handle, "_entry" );
+
+          /* STATIC VS DYNAMIC !? */
+          static _entrymodule data[LIBCFUNCSMAX];
+          data[0]= *(_entrymodule *)_entry;
+          int i = 0;
+          while (data[i].opcode != NULL) {
+            void (* func)() = dlsym( handle, data[i].cfuncs );
+            fe_set(ctx, fe_symbol(ctx, data[i].opcode), fe_cfunc(ctx, func));
+            /* printf("{ opcode: %s cfuncs: %s doc: %s}\n",data[i].opcode,data[i].cfuncs,data[i].doc); */
+            i++;
+          }
+
+          /* TODO to manage handle !!! MEMORY LEAKS !!! */
+          /* dlclose(handle); */
+        break;
+
         case P_LT: numcmpop(<); break;
         case P_LTE: numcmpop(<=); break;
         case P_GT: numcmpop(>); break;
@@ -862,8 +899,6 @@ int main(int argc, char **argv) {
   fe_Context *ctx = fe_open(buf, sizeof(buf));
 
   
-  fe_set(ctx, fe_symbol(ctx, "pow"), fe_cfunc(ctx, f_pow));
-
   /* init input file */
   if (argc > 1) {
     fp = fopen(argv[1], "rb");
@@ -873,6 +908,8 @@ int main(int argc, char **argv) {
   if (fp == stdin) { fe_handlers(ctx)->error = onerror; }
   gc = fe_savegc(ctx);
   setjmp(toplevel);
+
+  if (fp == stdin) { isInteractive = 1; }
 
   /* re(p)l */
   for (;;) {
@@ -885,7 +922,7 @@ int main(int argc, char **argv) {
 
   if(fp)
     fclose(fp);
-
-  printf("\n");
+  else
+    printf("\n");
   return EXIT_SUCCESS;
 }
