@@ -13,9 +13,9 @@
 #include <setjmp.h>
 #include <dlfcn.h>
 
-#define FE_VERSION "1.0"
+#define FE_VERSION "1.01"
 
-typedef struct {
+typedef struct _entrymodule {
   char* opcode;
   char* cfuncs;
   char* doc;
