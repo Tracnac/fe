@@ -38,7 +38,6 @@
 #define STRBUFSIZE    ( (int) sizeof(fe_Object*) - 1 )
 #define GCMARKBIT     ( 0x2 )
 #define GCSTACKSIZE   ( 4096 )
-#define LIBCFUNCSMAX  ( 4096 )
 
 static int isInteractive = 0;
 
@@ -628,8 +627,7 @@ static fe_Object* eval(fe_Context *ctx, fe_Object *obj, fe_Object *env, fe_Objec
   /* (import) opcode */
   void *handle = NULL;
   void (*_entry)(_entrymodule *) = NULL;
-  static _entrymodule _entrytable[LIBCFUNCSMAX];
-  int index = 0;
+  static _entrymodule *_entrytable_ptr;
 
   if (type(obj) == FE_TSYMBOL) { return cdr(getbound(obj, env)); }
   if (type(obj) != FE_TPAIR) { return obj; }
@@ -765,14 +763,12 @@ static fe_Object* eval(fe_Context *ctx, fe_Object *obj, fe_Object *env, fe_Objec
 
           /* MODULE MUST HAVE A STRUCT _ENTRY (See fe_math.h) TO DEFINE FUNCTIONS */
           _entry = dlsym( handle, "_entry" );
-
-          /* STATIC VS DYNAMIC !? */
-          _entrytable[0]= *(_entrymodule *)_entry;
-          while (_entrytable[index].opcode != NULL) {
-            fe_Object* (* func)() = dlsym( handle, _entrytable[index].cfuncs );
-            fe_set(ctx, fe_symbol(ctx, _entrytable[index].opcode), fe_cfunc(ctx, func));
-            /* printf("{ opcode: %s cfuncs: %s doc: %s}\n",_entrytable[index].opcode,_entrytable[index].cfuncs,_entrytable[index].doc); */
-            index++;
+          _entrytable_ptr = (_entrymodule *)_entry;
+          while ((_entrytable_ptr)->opcode != NULL ) {
+            fe_Object* (* func)() = dlsym( handle, (_entrytable_ptr)->cfuncs );
+            fe_set(ctx, fe_symbol(ctx, (_entrytable_ptr)->opcode), fe_cfunc(ctx, func));
+            /* printf("{ opcode: %s cfuncs: %s doc: %s}\n",(_entrytable_ptr)->opcode,(_entrytable_ptr)->cfuncs,(_entrytable_ptr)->doc); */
+            _entrytable_ptr++;
           }
 
           /* TODO to manage handle !!! MEMORY LEAKS !!! */
