@@ -22,7 +22,6 @@
 
 #include <string.h>
 #include "fe.h"
-#include "fe_math.h"
 
 #define unused(x)     ( (void) (x) )
 #define car(x)        ( (x)->car.o )
@@ -626,6 +625,12 @@ static fe_Object* eval(fe_Context *ctx, fe_Object *obj, fe_Object *env, fe_Objec
   fe_Object cl, *va, *vb;
   int n, gc;
 
+  /* (import) opcode */
+  void *handle = NULL;
+  void (*_entry)(_entrymodule *) = NULL;
+  static _entrymodule _entrytable[LIBCFUNCSMAX];
+  int index = 0;
+
   if (type(obj) == FE_TSYMBOL) { return cdr(getbound(obj, env)); }
   if (type(obj) != FE_TPAIR) { return obj; }
 
@@ -746,38 +751,33 @@ static fe_Object* eval(fe_Context *ctx, fe_Object *obj, fe_Object *env, fe_Objec
           break;
 
         case P_IMPORT:
+        /* TODO: Move this code to new file */
+        /* Disable pedantic for Lib DL */
+        #pragma GCC diagnostic push
+        #pragma GCC diagnostic ignored "-Wpedantic"
           va = checktype(ctx, evalarg(), FE_TSTRING);
-          /* DEBUG HARDCODED LIB */
-          void *handle = dlopen( "fe_math.so", RTLD_LAZY );
+          handle = dlopen( "fe_math.so", RTLD_LAZY );
           
           /* TODO: Better error message... */
           if( !handle ) {
-            if (isInteractive) {
-              printf("Import Error...");
-              break;
-            }
-            else {
               fe_error(ctx, "Import Error...");
-            }
           }
 
           /* MODULE MUST HAVE A STRUCT _ENTRY (See fe_math.h) TO DEFINE FUNCTIONS */
-          void (*_entry)(_entrymodule *);
           _entry = dlsym( handle, "_entry" );
 
           /* STATIC VS DYNAMIC !? */
-          static _entrymodule data[LIBCFUNCSMAX];
-          data[0]= *(_entrymodule *)_entry;
-          int i = 0;
-          while (data[i].opcode != NULL) {
-            void (* func)() = dlsym( handle, data[i].cfuncs );
-            fe_set(ctx, fe_symbol(ctx, data[i].opcode), fe_cfunc(ctx, func));
-            /* printf("{ opcode: %s cfuncs: %s doc: %s}\n",data[i].opcode,data[i].cfuncs,data[i].doc); */
-            i++;
+          _entrytable[0]= *(_entrymodule *)_entry;
+          while (_entrytable[index].opcode != NULL) {
+            fe_Object* (* func)() = dlsym( handle, _entrytable[index].cfuncs );
+            fe_set(ctx, fe_symbol(ctx, _entrytable[index].opcode), fe_cfunc(ctx, func));
+            /* printf("{ opcode: %s cfuncs: %s doc: %s}\n",_entrytable[index].opcode,_entrytable[index].cfuncs,_entrytable[index].doc); */
+            index++;
           }
 
           /* TODO to manage handle !!! MEMORY LEAKS !!! */
           /* dlclose(handle); */
+        #pragma GCC diagnostic pop
         break;
 
         case P_LT: numcmpop(<); break;
