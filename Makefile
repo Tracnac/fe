@@ -1,7 +1,7 @@
 CC=gcc
-# CFLAGS:=-O3 -DFE_STANDALONE -Wall -Wextra -Wsign-conversion -pedantic -std=c99 -march=native
-CFLAGS:=-DFE_STANDALONE -Wall -Wextra -pedantic -std=c89 -march=native
-LDFLAGS=-lm
+# CFLAGS:=-O3 -Wall -Wextra -Wsign-conversion -pedantic -std=c99 -march=native
+CFLAGS:=-Wall -Wextra -pedantic -std=c89 -march=native
+LDFLAGS=-lm -g
 EXEC=fe
 OBJ = ./src/fe.c
 OBJ += ./src/fe_math.c
@@ -17,4 +17,4 @@ fe: $(OBJ)
 .PHONY: clean
 
 clean:
-	rm -rf *.o $(EXEC)
+	rm -rf *.o *.so $(EXEC)
