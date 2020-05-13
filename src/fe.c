@@ -40,6 +40,10 @@
 #define GCSTACKSIZE   ( 4096 )
 
 static int isInteractive = 0;
+/* CLEANUP OPEN THINGS */
+void fe_atexit(void){
+  printf("\nBad stuff catcher...\n");
+}
 
 enum {
  P_LET, P_SET, P_IF, P_FN, P_MAC, P_WHILE, P_QUOTE, P_AND, P_OR, P_DO, P_CONS,
@@ -628,6 +632,8 @@ static fe_Object* eval(fe_Context *ctx, fe_Object *obj, fe_Object *env, fe_Objec
   void *handle = NULL;
   void (*_entry)(_entrymodule *) = NULL;
   static _entrymodule *_entrytable_ptr;
+  char buf0[128];
+  char buf1[128];
 
   if (type(obj) == FE_TSYMBOL) { return cdr(getbound(obj, env)); }
   if (type(obj) != FE_TPAIR) { return obj; }
@@ -749,16 +755,21 @@ static fe_Object* eval(fe_Context *ctx, fe_Object *obj, fe_Object *env, fe_Objec
           break;
 
         case P_IMPORT:
-        /* TODO: Move this code to new file */
+        /* TODO: Move this code to new file, manage DOC */
         /* Disable pedantic for Lib DL */
         #pragma GCC diagnostic push
         #pragma GCC diagnostic ignored "-Wpedantic"
+
+          /* From : math to fe_math.so / Module max name lenght is 16 chars */
           va = checktype(ctx, evalarg(), FE_TSTRING);
-          handle = dlopen( "fe_math.so", RTLD_LAZY );
-          
+          fe_tostring(ctx, va, buf0, 17);
+          sprintf (buf1,"fe_%.16s.so",buf0);
+
+          /* NO LAZY HERE !!! LOAD OR DIE */
+          handle = dlopen(buf1, RTLD_NOW );
           /* TODO: Better error message... */
           if( !handle ) {
-              fe_error(ctx, "Import Error...");
+              fe_error(ctx, dlerror());
           }
 
           /* MODULE MUST HAVE A STRUCT _ENTRY (See fe_math.h) TO DEFINE FUNCTIONS */
@@ -766,12 +777,13 @@ static fe_Object* eval(fe_Context *ctx, fe_Object *obj, fe_Object *env, fe_Objec
           _entrytable_ptr = (_entrymodule *)_entry;
           while ((_entrytable_ptr)->opcode != NULL ) {
             fe_Object* (* func)() = dlsym( handle, (_entrytable_ptr)->cfuncs );
-            fe_set(ctx, fe_symbol(ctx, (_entrytable_ptr)->opcode), fe_cfunc(ctx, func));
+            sprintf(buf1,"%.16s/%.64s",buf0,(_entrytable_ptr)->opcode);
+            fe_set(ctx, fe_symbol(ctx, buf1), fe_cfunc(ctx, func));
             /* printf("{ opcode: %s cfuncs: %s doc: %s}\n",(_entrytable_ptr)->opcode,(_entrytable_ptr)->cfuncs,(_entrytable_ptr)->doc); */
             _entrytable_ptr++;
           }
 
-          /* TODO to manage handle !!! MEMORY LEAKS !!! */
+          /* TODO manage handle !!! MEMORY LEAKS !!! */
           /* dlclose(handle); */
         #pragma GCC diagnostic pop
         break;
@@ -894,7 +906,12 @@ int main(int argc, char **argv) {
   FILE *volatile fp = stdin;
   fe_Context *ctx = fe_open(buf, sizeof(buf));
 
-  
+  gc = atexit(fe_atexit);
+  if (gc != 0) {
+      fprintf(stderr, "cannot set exit function\n");
+      exit(EXIT_FAILURE);
+  }
+
   /* init input file */
   if (argc > 1) {
     fp = fopen(argv[1], "rb");
