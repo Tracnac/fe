@@ -86,7 +86,7 @@ we could define the following macro to increment a value by one:
 ```clojure
 (= incr
   (mac (sym)
-    (list '= sym (list '+ sym 1))))
+    (list 'set sym (list '+ sym 1))))
 ```
 
 And use it in the following while loop:
@@ -105,7 +105,7 @@ replacing the call to the macro with the code it generated:
 (= i 0)
 (while (< i 0)
   (print i)
-  (= i (+ i 1)))
+  (set i (+ i 1)))
 ```
 
 Subsequent iterations of the loop would run the new code which now exists where
