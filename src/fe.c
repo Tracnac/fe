@@ -932,7 +932,7 @@ int main(int argc, char **argv) {
     } 
     if (!(obj = fe_readfp(ctx, fp))) { break; }
     obj = fe_eval(ctx, obj);
-    if (S_ISCHR(stats.st_mode) || S_ISFIFO(stats.st_mode)) {
+    if (! isnil(obj) && (S_ISCHR(stats.st_mode) || S_ISFIFO(stats.st_mode))) {
       fe_writefp(ctx, obj, stdout);
       printf("\n");
     } 
