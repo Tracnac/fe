@@ -20,7 +20,6 @@
 ** IN THE SOFTWARE.
 */
 
-#include <string.h>
 #include "fe.h"
 
 #define unused(x)     ( (void) (x) )
@@ -39,10 +38,8 @@
 #define GCMARKBIT     ( 0x2 )
 #define GCSTACKSIZE   ( 4096 )
 
-static int isInteractive = 0;
 /* CLEANUP OPEN THINGS */
 void fe_atexit(void){
-  printf("\nBad stuff catcher...\n");
 }
 
 enum {
@@ -903,13 +900,15 @@ static void onerror(fe_Context *ctx, const char *msg, fe_Object *cl) {
 int main(int argc, char **argv) {
   int gc;
   fe_Object *obj;
+  fe_Context *ctx;
   FILE *volatile fp = stdin;
-  fe_Context *ctx = fe_open(buf, sizeof(buf));
+  struct stat stats;
+
+  ctx = fe_open(buf, sizeof(buf));
 
   gc = atexit(fe_atexit);
   if (gc != 0) {
-      fprintf(stderr, "cannot set exit function\n");
-      exit(EXIT_FAILURE);
+      fe_error(ctx, "could not set exit function\n");
   }
 
   /* init input file */
@@ -917,25 +916,30 @@ int main(int argc, char **argv) {
     fp = fopen(argv[1], "rb");
     if (!fp) { fe_error(ctx, "could not open input file"); }
   }
+  else { 
+    fstat(STDIN_FILENO, &stats);
+    fe_handlers(ctx)->error = onerror;
+  }
 
-  if (fp == stdin) { fe_handlers(ctx)->error = onerror; }
   gc = fe_savegc(ctx);
   setjmp(toplevel);
-
-  if (fp == stdin) { isInteractive = 1; }
 
   /* re(p)l */
   for (;;) {
     fe_restoregc(ctx, gc);
-    if (fp == stdin) { printf("λ => "); }
+    if (S_ISCHR(stats.st_mode)) {
+      printf("λ => "); 
+    } 
     if (!(obj = fe_readfp(ctx, fp))) { break; }
     obj = fe_eval(ctx, obj);
-    if (fp == stdin) { fe_writefp(ctx, obj, stdout); printf("\n"); }
+    if (S_ISCHR(stats.st_mode) || S_ISFIFO(stats.st_mode)) {
+      fe_writefp(ctx, obj, stdout);
+      printf("\n");
+    } 
   }
 
-  if(fp)
+  if(fp != stdin)
     fclose(fp);
-  else
-    printf("\n");
+
   return EXIT_SUCCESS;
 }
