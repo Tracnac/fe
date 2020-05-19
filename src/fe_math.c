@@ -19,10 +19,10 @@ _entrymodule _entry[] = {
     {"ceil", "fn_ceil", "Returns the smallest integer value greater than or equal to x."},
     {"fabs", "fn_fabs", "Returns the absolute value of x."},
     {"floor", "fn_floor", "Returns the largest integer value less than or equal to x."},
+    {"fmod", "fn_fmod", "Returns the remainder of x divided by y."},
     {NULL, NULL, NULL},
 
     /* NOT IMPLEMENTED YET See below */
-    {"fmod", "fn_fmod", "Returns the remainder of x divided by y."},
     {"frexp", "fn_frexp", "The returned value is the mantissa and the integer pointed to by exponent is the exponent. The resultant value is x = mantissa * 2 ^ exponent."},
     {"ldexp", "fn_ldexp", "Returns x multiplied by 2 raised to the power of exponent."},
     {"modf", "fn_modf", "The returned value is the fraction component (part after the decimal), and sets integer to the integer component."}
@@ -38,14 +38,14 @@ fe_Object *fn_frexp(fe_Context *ctx, fe_Object *arg)
 }
 */
 /* ldexp(double x, int exponent)
-    fe_Object *fn_ldexp(fe_Context *ctx, fe_Object *arg)
+fe_Object *fn_ldexp(fe_Context *ctx, fe_Object *arg)
 {
   float x = fe_tonumber(ctx, fe_nextarg(ctx, &arg));
   return fe_number(ctx, ldexp(x));
 }
 */
 /* modf(double x, double *integer)
-    fe_Object *fn_modf(fe_Context *ctx, fe_Object *arg)
+fe_Object *fn_modf(fe_Context *ctx, fe_Object *arg)
 {
   float x = fe_tonumber(ctx, fe_nextarg(ctx, &arg));
   return fe_number(ctx, modf(x));
